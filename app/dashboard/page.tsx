@@ -157,7 +157,7 @@ export default function DashboardPage() {
           <Button
             variant="ghost"
             size="icon"
-            className="text-gray-400 hover:text-white"
+            className="text-gray-400 "
             onClick={() => setSidebarCollapsed((prev) => !prev)}
             title={sidebarCollapsed ? 'Open call panel' : 'Collapse call panel'}
           >
@@ -170,7 +170,7 @@ export default function DashboardPage() {
               size="icon"
               className={
                 sidebarCollapsed
-                  ? 'text-gray-400 hover:text-white'
+                  ? 'text-gray-400'
                   : 'bg-blue-600 text-white hover:bg-blue-700'
               }
               onClick={() => setSidebarCollapsed(false)}
@@ -181,7 +181,7 @@ export default function DashboardPage() {
             <Button
               variant="ghost"
               size="icon"
-              className="text-gray-400 hover:text-white"
+              className="text-gray-400"
               onClick={() => {
                 if (!selectedCallId && calls.length > 0) {
                   setSelectedCallId(calls[0].id);
@@ -198,7 +198,7 @@ export default function DashboardPage() {
             <Button 
               variant="ghost" 
               size="icon" 
-              className={`text-gray-500 hover:text-white ${dataManagementOpen ? 'text-blue-400' : ''}`}
+              className={`text-gray-500  ${dataManagementOpen ? 'text-blue-400' : ''}`}
               onClick={() => setDataManagementOpen(true)}
               title="Data Management"
             >
@@ -207,16 +207,16 @@ export default function DashboardPage() {
             <Button 
               variant="ghost" 
               size="icon" 
-              className={`text-gray-500 hover:text-white ${callHistoryOpen ? 'text-blue-400' : ''}`}
+              className={`text-gray-500  ${callHistoryOpen ? 'text-blue-400' : ''}`}
               onClick={() => setCallHistoryOpen(true)}
               title="Call History"
             >
               <ClipboardList className="w-5 h-5" />
             </Button>
-            <Button variant="ghost" size="icon" className="text-gray-500 hover:text-white" title="Reports">
+            <Button variant="ghost" size="icon" className="text-gray-500 " title="Reports">
               <ClipboardCheck className="w-5 h-5" />
             </Button>
-            <Button variant="ghost" size="icon" className="text-gray-500 hover:text-white" title="Settings">
+            <Button variant="ghost" size="icon" className="text-gray-500 " title="Settings">
               <Settings className="w-5 h-5" />
             </Button>
           </div>

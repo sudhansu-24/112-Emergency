@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Hume API error:', response.status, errorText);
+      console.error(' Hume API error:', response.status, errorText);
       
       return NextResponse.json(
         { 
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log('✅ Hume chat events retrieved:', {
+    console.log('Hume chat events retrieved:', {
       chatGroupId,
       eventCount: data.events?.length || 0
     });

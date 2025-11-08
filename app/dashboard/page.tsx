@@ -43,7 +43,7 @@ import {
 import StartEmergencyCall from '@/components/StartEmergencyCall';
 import IncidentWorkflowOverlay from '@/components/IncidentWorkflowOverlay';
 import DataManagementDashboard from '@/components/DataManagementDashboard';
-import { useRouter } from 'next/navigation';
+import CallHistoryOverlay from '@/components/CallHistoryOverlay';
 
 // Dynamic map import
 const EmergencyMap = dynamic(() => import('@/components/EmergencyMap').then((mod) => mod.default), {
@@ -59,7 +59,6 @@ const EmergencyMap = dynamic(() => import('@/components/EmergencyMap').then((mod
 }) as any;
 
 export default function DashboardPage() {
-  const router = useRouter();
   const [calls, setCalls] = useState<EmergencyCall[]>([]);
   const [selectedCallId, setSelectedCallId] = useState<string | null>(null);
   const [view, setView] = useState<'emergencies' | 'alerts'>('emergencies');
@@ -69,6 +68,7 @@ export default function DashboardPage() {
   const hasAutoSelectedRef = useRef(false);
   const [workflowOpen, setWorkflowOpen] = useState(false);
   const [dataManagementOpen, setDataManagementOpen] = useState(false);
+  const [callHistoryOpen, setCallHistoryOpen] = useState(false);
 
   // Load calls from localStorage + mock data
   useEffect(() => {
@@ -207,8 +207,8 @@ export default function DashboardPage() {
             <Button 
               variant="ghost" 
               size="icon" 
-              className="text-gray-500 hover:text-white" 
-              onClick={() => router.push('/call-history')}
+              className={`text-gray-500 hover:text-white ${callHistoryOpen ? 'text-blue-400' : ''}`}
+              onClick={() => setCallHistoryOpen(true)}
               title="Call History"
             >
               <ClipboardList className="w-5 h-5" />
@@ -813,6 +813,11 @@ export default function DashboardPage() {
       <DataManagementDashboard
         open={dataManagementOpen}
         onClose={() => setDataManagementOpen(false)}
+      />
+
+      <CallHistoryOverlay
+        open={callHistoryOpen}
+        onClose={() => setCallHistoryOpen(false)}
       />
     </div>
   );

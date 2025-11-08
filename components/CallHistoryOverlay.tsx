@@ -1,6 +1,6 @@
 /**
- * Call History Page
- * View and manage all emergency call records
+ * Call History Overlay
+ * Full-screen overlay for viewing and managing call history
  */
 
 'use client';
@@ -37,6 +37,14 @@ import {
   Archive,
   Trash2,
   Plus,
+  X,
+  Home,
+  Radio,
+  Lightbulb,
+  Database,
+  ClipboardList,
+  ClipboardCheck,
+  Settings,
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -47,7 +55,12 @@ interface CallHistoryItem extends EmergencyCall {
   duration?: string;
 }
 
-export default function CallHistoryPage() {
+interface CallHistoryOverlayProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+export default function CallHistoryOverlay({ open, onClose }: CallHistoryOverlayProps) {
   const [calls, setCalls] = useState<CallHistoryItem[]>([]);
   const [filterType, setFilterType] = useState<FilterType>('All');
   const [severityFilter, setSeverityFilter] = useState<string>('all');
@@ -63,6 +76,8 @@ export default function CallHistoryPage() {
   });
 
   useEffect(() => {
+    if (!open) return;
+    
     // Load calls from localStorage + mock data
     const loadCalls = () => {
       try {
@@ -83,7 +98,7 @@ export default function CallHistoryPage() {
       }
     };
     loadCalls();
-  }, []);
+  }, [open]);
 
   const filteredCalls = calls.filter(call => {
     if (severityFilter !== 'all' && call.severity !== severityFilter) return false;
@@ -125,8 +140,10 @@ export default function CallHistoryPage() {
     });
   };
 
+  if (!open) return null;
+
   return (
-    <div className="h-screen w-full bg-gray-950 text-gray-100 flex flex-col">
+    <div className="fixed inset-y-0 left-14 right-0 z-[2000] bg-gray-950 text-gray-100 flex flex-col">
       {/* Header */}
       <header className="bg-gray-900 border-b border-gray-800 px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -159,6 +176,15 @@ export default function CallHistoryPage() {
             {new Date().toLocaleTimeString()} LIVE
           </div>
           <div className="text-sm text-gray-400">SAN FRANCISCO, CA</div>
+          
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="text-gray-400 hover:text-white"
+          >
+            <X className="w-5 h-5" />
+          </Button>
         </div>
       </header>
 
@@ -261,7 +287,7 @@ export default function CallHistoryPage() {
                     } hover:bg-gray-800/50 transition-colors`}
                   >
                     <td className="px-4 py-3 font-mono">{call.id.substring(0, 3).padStart(3, '0')}</td>
-                    <td className="px-4 py-3 capitalize">{call.incident_type || 'General'}</td>
+                    <td className="px-4 py-3 capitalize">{call.incident_type || 'Other'}</td>
                     <td className="px-4 py-3">
                       {new Date(call.created_at).toLocaleString('en-US', {
                         hour: '2-digit',
@@ -284,7 +310,7 @@ export default function CallHistoryPage() {
                             : 'bg-green-600'
                         }`}
                       >
-                        {call.severity || 'safe'}
+                        {call.severity || 'low'}
                       </Badge>
                     </td>
                     <td className="px-4 py-3 capitalize">{call.status}</td>
@@ -324,7 +350,7 @@ export default function CallHistoryPage() {
 
       {/* Add Call Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-        <DialogContent className="bg-gray-900 border-gray-700 text-gray-100">
+        <DialogContent className="bg-gray-900 border-gray-700 text-gray-100 z-[9999]">
           <DialogHeader>
             <DialogTitle>Create a new call</DialogTitle>
           </DialogHeader>

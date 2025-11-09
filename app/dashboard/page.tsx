@@ -42,6 +42,7 @@ import {
 } from 'lucide-react';
 import StartEmergencyCall from '@/components/StartEmergencyCall';
 import IncidentWorkflowOverlay from '@/components/IncidentWorkflowOverlay';
+import MiniLocationMap from '@/components/MiniLocationMap';
 import DataManagementDashboard from '@/components/DataManagementDashboard';
 import CallHistoryOverlay from '@/components/CallHistoryOverlay';
 
@@ -447,17 +448,25 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="relative aspect-video bg-gray-800 rounded overflow-hidden">
-                    <img
-                      src={`https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/static/${selectedCall.caller_location?.longitude || -122.4194},${selectedCall.caller_location?.latitude || 37.7749},15,0/400x225@2x?access_token=pk.eyJ1IjoiZXhhbXBsZSIsImEiOiJjbGV4YW1wbGUifQ.example`}
-                      alt="Street view"
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.src = 'https://via.placeholder.com/400x225/1f2937/9ca3af?text=Street+View';
-                      }}
-                    />
-                    <div className="absolute bottom-2 right-2 bg-black/50 px-2 py-1 rounded text-xs">
-                      📍 Location
-                    </div>
+                    {/* Live Leaflet widget keeps the dispatcher aligned with the caller's actual coordinates. */}
+                    {selectedCall.caller_location?.latitude !== undefined &&
+                    selectedCall.caller_location?.longitude !== undefined ? (
+                      <>
+                        <MiniLocationMap
+                          latitude={selectedCall.caller_location.latitude}
+                          longitude={selectedCall.caller_location.longitude}
+                          label={selectedCall.caller_location.address}
+                          className="absolute inset-0 h-full w-full"
+                        />
+                        <div className="absolute bottom-2 right-2 bg-black/50 px-2 py-1 rounded text-xs">
+                          📍 {selectedCall.caller_location.address ? 'Location' : 'Coordinates'}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-xs text-gray-500">
+                        Location data unavailable
+                      </div>
+                    )}
                   </div>
                 </div>
 

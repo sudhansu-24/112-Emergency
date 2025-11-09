@@ -114,7 +114,7 @@ AI: I'll send an officer to address the noise complaint. They should arrive with
 export default function DemoCallSimulator({ onCallCreated }: { onCallCreated?: () => void }) {
   const [open, setOpen] = useState(false);
   const [selectedScenario, setSelectedScenario] = useState<string>('');
-  const [phoneNumber, setPhoneNumber] = useState('+14155550000');
+  const [phoneNumber, setPhoneNumber] = useState('+91 3489270190');
   const [isSimulating, setIsSimulating] = useState(false);
 
   const handleSimulateCall = async () => {
@@ -144,7 +144,7 @@ export default function DemoCallSimulator({ onCallCreated }: { onCallCreated?: (
             caller_condition: scenario.severity === 'critical' ? 'panicked' : 'distressed',
             persons_involved: scenario.severity === 'critical' ? 2 : 1,
             immediate_threats: scenario.severity === 'critical' ? ['active emergency', 'immediate danger'] : [],
-            location: '123 Main Street, San Francisco, CA',
+            location: 'Rohini Sector 16, New Delhi, India',
           },
         }),
       });

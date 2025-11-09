@@ -191,14 +191,6 @@ export interface HumeMessageEvent {
   transcript?: any[];
 }
 
-// ============================================================================
-// Removed: Nokia API Types - no longer using Nokia NetworkasCode
-// ============================================================================
-
-// ============================================================================
-// Dispatch Types
-// ============================================================================
-
 export interface DispatchAction {
   id: string;
   call_id: string;

@@ -191,7 +191,6 @@ export default function EmergencyMap({ calls, selectedCallId, onMarkerClick }: E
     </div>
   );
 }
-
 /**
  * Get marker color based on severity
  */
@@ -252,7 +251,6 @@ function createCustomMarkerIcon(color: string, incidentType?: string): L.DivIcon
     popupAnchor: [0, -40],
   });
 }
-
 /**
  * Get icon emoji for incident type
  */
@@ -384,4 +382,6 @@ function createPopupContent(call: EmergencyCall): string {
     </div>
   `;
 }
+
+
 

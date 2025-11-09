@@ -175,7 +175,7 @@ export default function CallHistoryOverlay({ open, onClose }: CallHistoryOverlay
           <div className="px-3 py-1 bg-red-600 rounded text-xs font-semibold">
             {new Date().toLocaleTimeString()} LIVE
           </div>
-          <div className="text-sm text-gray-400">SAN FRANCISCO, CA</div>
+          <div className="text-sm text-gray-400">New Delhi, India</div>
           
           <Button
             variant="ghost"

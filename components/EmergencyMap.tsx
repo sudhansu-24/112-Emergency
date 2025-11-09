@@ -35,35 +35,63 @@ export default function EmergencyMap({ calls, selectedCallId, onMarkerClick }: E
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const popupsRef = useRef<Map<string, L.Popup>>(new Map());
+  const [mapCenter, setMapCenter] = useState<[number, number]>([37.7749, -122.4194]);
 
   // Initialize map once
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
-
-    const map = L.map(containerRef.current, {
-      center: [37.7749, -122.4194],
-      zoom: 13,
-      zoomControl: true,
-      attributionControl: false,
-    });
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '© OpenStreetMap',
-    }).addTo(map);
-
-    mapRef.current = map;
-  }, []);
-
-  // Cleanup map on unmount
-  useEffect(() => {
-    return () => {
+    
+    // Clean up any existing map instance
+    const cleanupMap = () => {
       if (mapRef.current) {
+        mapRef.current.off();
         mapRef.current.remove();
         mapRef.current = null;
       }
     };
+
+    // Wait for the container to be fully rendered
+    const initMap = setTimeout(() => {
+      try {
+        const map = L.map(containerRef.current as HTMLElement, {
+          center: mapCenter,
+          zoom: 13,
+          zoomControl: true,
+          attributionControl: false,
+          preferCanvas: true, // Better performance with many markers
+        });
+
+        // Add the OpenStreetMap tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '© OpenStreetMap contributors',
+          detectRetina: true,
+        }).addTo(map);
+
+        // Force a resize to ensure the map renders correctly
+        const resizeTimer = setTimeout(() => {
+          map.invalidateSize();
+          // Recenter the map after resize
+          map.setView(mapCenter, 13);
+        }, 100);
+
+        mapRef.current = map;
+
+        // Cleanup function
+        return () => {
+          clearTimeout(initMap);
+          clearTimeout(resizeTimer);
+          cleanupMap();
+        };
+      } catch (error) {
+        console.error('Error initializing map:', error);
+      }
+    }, 100);
+
+    return cleanupMap;
+
   }, []);
+
 
   // Update markers when calls change
   useEffect(() => {
@@ -133,7 +161,14 @@ export default function EmergencyMap({ calls, selectedCallId, onMarkerClick }: E
 
   return (
     <div className="relative h-full w-full">
-      <div ref={containerRef} className="h-full w-full z-0"></div>
+      <div 
+        ref={containerRef} 
+        className="h-full w-full z-0"
+        style={{
+          minHeight: '500px',
+          backgroundColor: '#1a1a1a'
+        }}
+      ></div>
       
       {/* Map Legend */}
       <div className="absolute bottom-6 right-6 bg-gray-900/95 backdrop-blur rounded-lg shadow-xl p-4 z-[1000] border border-gray-700">
@@ -220,35 +255,44 @@ function createCustomMarkerIcon(color: string, incidentType?: string): L.DivIcon
     html: `
       <div style="position: relative;">
         <div style="
-          width: 32px;
-          height: 32px;
+          width: 40px;
+          height: 40px;
           background: ${color};
           border: 3px solid white;
           border-radius: 50%;
-          box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+          box-shadow: 0 4px 8px rgba(0,0,0,0.3), 0 0 0 4px ${color}33;
           display: flex;
           align-items: center;
-          justify-content: center;
-          font-size: 16px;
+          justify-center: center;
+          font-size: 20px;
+          animation: pulse 2s infinite;
         ">
           ${icon}
         </div>
         <div style="
           position: absolute;
-          bottom: -8px;
+          bottom: -4px;
           left: 50%;
           transform: translateX(-50%);
-          width: 0;
-          height: 0;
-          border-left: 8px solid transparent;
-          border-right: 8px solid transparent;
-          border-top: 8px solid ${color};
+          width: 8px;
+          height: 8px;
+          background: ${color};
+          border: 2px solid white;
+          border-radius: 50%;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         "></div>
       </div>
+      <style>
+        @keyframes pulse {
+          0% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.05); opacity: 0.8; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+      </style>
     `,
-    iconSize: [32, 40],
-    iconAnchor: [16, 40],
-    popupAnchor: [0, -40],
+    iconSize: [40, 48],
+    iconAnchor: [20, 48],
+    popupAnchor: [0, -48],
   });
 }
 /**

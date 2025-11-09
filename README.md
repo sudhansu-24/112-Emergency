@@ -1,5 +1,12 @@
 # Pulse112 - Emergency Response Platform
 
+<p align="center">
+  <img src="./app/favicon.ico" alt="Pulse112 Icon" width="96" />
+</p>
+
+**Demo Pitch Deck:** [Pulse112 Canva Presentation](https://www.canva.com/design/DAG4Lk5u0ks/47McT_9zrhAOyyPDFTwzRw/edit)  
+**Product Demo Video:** [YouTube Walkthrough](https://youtu.be/dfOUkR4HiP4)
+
 **AI-Powered Emergency Dispatch System** combining real-time voice triage, emotion detection, and carrier-grade location services.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
@@ -13,6 +20,7 @@
 
 - [Overview](#-overview)
 - [Features](#-features)
+- [Screenshots](#-screenshots)
 - [Architecture](#-architecture)
 - [Tech Stack](#-tech-stack)
 - [Quick Start](#-quick-start)
@@ -66,6 +74,20 @@ Pulse112 is a next-generation emergency dispatch platform that leverages AI to i
 - 🎙️ Integrated voice call interface
 - 📝 Full transcript and emotion timeline
 - 🤖 AI recommendations for each call
+
+---
+
+## 📸 Screenshots
+
+| Home Dashboard | Live Call Modal | Data Management Heatmap |
+| --- | --- | --- |
+| ![Dashboard overview](./public/screenshots/HomePage.png) | ![Emergency call workflow](./public/screenshots/EmergencyCall.png) | ![Data management heatmap](./public/screenshots/HeatMap.png) |
+
+Each capture reflects the New Delhi–focused deployment:
+
+- **Dashboard Overview** – Real-time incident list, AI summary panel, and Leaflet map centered on Rohini, Delhi.
+- **Emergency Call Modal** – Emotion-aware triage with transcript, recommendations, and inline street-view mini map.
+- **Data Management Heatmap** – Analytics overlay showing simulated incident intensity across Delhi sectors with morning/night data toggles.
 
 ---
 

@@ -35,7 +35,7 @@ export default function EmergencyMap({ calls, selectedCallId, onMarkerClick }: E
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const popupsRef = useRef<Map<string, L.Popup>>(new Map());
-  const [mapCenter, setMapCenter] = useState<[number, number]>([37.7749, -122.4194]);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([28.7041, 77.1025]);
 
   // Initialize map once
   useEffect(() => {
@@ -68,19 +68,11 @@ export default function EmergencyMap({ calls, selectedCallId, onMarkerClick }: E
           detectRetina: true,
         }).addTo(map);
 
-        // Force a resize to ensure the map renders correctly
-        const resizeTimer = setTimeout(() => {
-          map.invalidateSize();
-          // Recenter the map after resize
-          map.setView(mapCenter, 13);
-        }, 100);
-
         mapRef.current = map;
 
         // Cleanup function
         return () => {
           clearTimeout(initMap);
-          clearTimeout(resizeTimer);
           cleanupMap();
         };
       } catch (error) {
@@ -158,6 +150,53 @@ export default function EmergencyMap({ calls, selectedCallId, onMarkerClick }: E
     });
 
   }, [calls, selectedCallId, onMarkerClick]);
+
+  // Watch container dimension changes (e.g., overlays opening/closing) and keep Leaflet layout in sync.
+  useEffect(() => {
+    if (!containerRef.current || !mapRef.current || typeof ResizeObserver === 'undefined') {
+      return;
+    }
+
+    const mapInstance = mapRef.current;
+
+    const handleResize = () => {
+      mapInstance.invalidateSize();
+
+      // If no call is selected, keep all markers in view; otherwise, centre on the active one.
+      if (!selectedCallId) {
+        const latLngs: L.LatLngExpression[] = [];
+        calls.forEach((call) => {
+          const location = call.caller_location;
+          if (location?.latitude && location.longitude) {
+            latLngs.push([location.latitude, location.longitude]);
+          }
+        });
+        if (latLngs.length > 0) {
+          const bounds = L.latLngBounds(latLngs);
+          mapInstance.fitBounds(bounds, { padding: [60, 60], maxZoom: 15 });
+        } else {
+          mapInstance.setView(mapCenter, 13);
+        }
+      } else {
+        const activeCall = calls.find((call) => call.id === selectedCallId);
+        const location = activeCall?.caller_location;
+        if (location?.latitude && location.longitude) {
+          mapInstance.setView([location.latitude, location.longitude], 15);
+        }
+      }
+    };
+
+    const observer = new ResizeObserver(() => {
+      // Debounce via animation frame for smoother transitions.
+      requestAnimationFrame(handleResize);
+    });
+
+    observer.observe(containerRef.current);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [calls, selectedCallId, mapCenter]);
 
   return (
     <div className="relative h-full w-full">

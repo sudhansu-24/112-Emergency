@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
         messages: [
           {
             role: 'system',
-            content: 'You are an emergency dispatch AI system analyzing 911 call transcripts. Extract structured information to help dispatchers respond quickly. Always respond with valid JSON only.',
+            content: 'You are an emergency dispatch AI system analyzing 112 call transcripts. Extract structured information to help dispatchers respond quickly. Always respond with valid JSON only.',
           },
           {
             role: 'user',

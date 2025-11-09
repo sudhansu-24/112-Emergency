@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "KWIK - Emergency Dispatch Platform",
+  title: "Pulse112 - Emergency Response Platform",
   description: "AI-powered emergency dispatch with voice triage, emotion detection, and real-time location services",
 };
 

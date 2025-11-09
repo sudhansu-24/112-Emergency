@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: 'system',
-          content: `You are an expert emergency dispatcher AI analyzing 911 calls. 
+          content: `You are an expert emergency dispatcher AI analyzing 112 calls. 
 
 Your task is to analyze the conversation transcript and emotion data, then provide:
 1. LABELS - Emergency category labels (e.g., MEDICAL_EMERGENCY, FIRE, ACCIDENT, VIOLENCE, etc.)

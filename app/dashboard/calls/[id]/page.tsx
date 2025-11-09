@@ -1,5 +1,5 @@
 /**
- * KWIK Call Detail Page
+ * Pulse112 Call Detail Page
  * Detailed view of emergency call with Hume EVI voice interface, transcript, and AI triage
  */
 
@@ -178,7 +178,7 @@ export default function CallDetailPage({ params }: PageProps) {
                   <div className="space-y-3 max-w-md">
                     <div className="bg-gray-700/50 rounded-lg p-4 text-left">
                       <p className="text-sm">
-                        <strong className="text-blue-400">🎯 Configuration:</strong> KWIK Emergency Triage Agent
+                        <strong className="text-blue-400">🎯 Configuration:</strong> Pulse112 Emergency Triage Agent
                       </p>
                     </div>
                     <div className="bg-gray-700/50 rounded-lg p-4 text-left">

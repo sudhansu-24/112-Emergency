@@ -1,5 +1,5 @@
 /**
- * KWIK Demo Call Simulator
+ * Pulse112 Demo Call Simulator
  * Component to simulate emergency calls for hackathon demo
  */
 

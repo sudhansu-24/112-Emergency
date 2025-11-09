@@ -1,6 +1,6 @@
-# 112 - 🚨 KWIK - Know Who's In Krisis
+# Pulse112 - Emergency Response Platform
 
-**AI-Powered Emergency Dispatch Platform** combining real-time voice triage, emotion detection, and carrier-grade location services.
+**AI-Powered Emergency Dispatch System** combining real-time voice triage, emotion detection, and carrier-grade location services.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-14-black)
@@ -32,7 +32,7 @@
 
 ## 🎯 Overview
 
-KWIK is a next-generation emergency dispatch platform that leverages AI to improve emergency response times and accuracy. By combining voice emotion detection, AI-powered triage, and precise cellular network location data, KWIK helps dispatchers make faster, more informed decisions.
+Pulse112 is a next-generation emergency dispatch platform that leverages AI to improve emergency response times and accuracy. By combining voice emotion detection, AI-powered triage, and precise cellular network location data, Pulse112 helps dispatchers make faster, more informed decisions.
 
 ### Key Differentiators
 
@@ -206,7 +206,7 @@ To enable **real APIs**, add your API keys to `.env.local` and restart the serve
 
 ## 🗄️ Database Schema
 
-KWIK uses Supabase (PostgreSQL) for production or localStorage for demos.
+Pulse112 uses Supabase (PostgreSQL) for production or localStorage for demos.
 
 ### `calls` Table
 
@@ -866,7 +866,7 @@ microphone.on('data', (chunk) => {
 
 ### Recommended Approach
 
-For **production KWIK**, I recommend:
+For **production Pulse112**, I recommend:
 
 1. **Use Deepgram or AssemblyAI** for transcription (free tier → paid as you scale)
 2. **Use Hume AI** for emotion detection (pass Deepgram transcript to Hume's text analysis)
@@ -1256,7 +1256,7 @@ Open an issue with:
 
 MIT License
 
-Copyright (c) 2024 KWIK Team
+Copyright (c) 2024 Pulse112 Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

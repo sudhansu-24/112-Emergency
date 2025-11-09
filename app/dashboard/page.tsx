@@ -1,5 +1,5 @@
 /**
- * KWIK Emergency Dashboard - Professional Dispatch Interface
+ * Pulse112 Emergency Dashboard - Professional Dispatch Interface
  * Three-panel layout: Call Details | Map | Units Status
  */
 
@@ -534,7 +534,7 @@ export default function DashboardPage() {
                       <>
                         <div className="flex gap-2">
                           <span className="text-gray-500 text-xs">1:00</span>
-                          <div><span className="text-gray-500">DISPATCHER:</span> 911 What's your emergency?</div>
+                          <div><span className="text-gray-500">DISPATCHER:</span> 112 What's your emergency?</div>
                         </div>
                         <div className="flex gap-2">
                           <span className="text-gray-500 text-xs">1:02</span>

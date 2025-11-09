@@ -1,5 +1,5 @@
 /**
- * KWIK Emergency Map Component
+ * Pulse112 Emergency Map Component
  * Interactive map displaying emergency call locations with Leaflet
  */
 

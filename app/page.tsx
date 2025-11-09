@@ -1,5 +1,5 @@
 /**
- * KWIK Landing Page
+ * Pulse112 Landing Page
  * Redirects to dashboard for hackathon demo
  */
 

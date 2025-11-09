@@ -1,5 +1,5 @@
 /**
- * KWIK Start Emergency Call Component
+ * Pulse112 Start Emergency Call Component
  * Opens Hume EVI interface for real voice conversation with emotion analysis
  */
 

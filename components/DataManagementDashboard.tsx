@@ -519,7 +519,8 @@ function MapCard({ timePeriod }: { timePeriod: TimePeriod }) {
 
     // Dynamic imports for client-side only
     const initMap = async () => {
-      const L = (await import('leaflet')).default;
+      const leafletModule = await import('leaflet');
+      const L = leafletModule.default ?? leafletModule;
       await import('leaflet.heat');
 
       // Clean up existing map
@@ -529,7 +530,7 @@ function MapCard({ timePeriod }: { timePeriod: TimePeriod }) {
 
       // Initialize map
       const map = L.map(containerRef.current!, {
-        center: [37.7749, -122.4194],
+        center: [28.7041, 77.1025],
         zoom: 12,
         zoomControl: false,
         attributionControl: false,
@@ -549,35 +550,35 @@ function MapCard({ timePeriod }: { timePeriod: TimePeriod }) {
       // Or Stadia Maps (requires free account for production):
       // L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', { ... })
 
-      // Generate realistic emergency call heatmap data around SF
+      // Generate realistic emergency call heatmap data around North-West Delhi (Rohini & neighboring sectors)
       const heatData: [number, number, number][] = [];
       
-      // High-density zones (downtown, tenderloin, mission)
+      // High-density zones across Rohini, Pitampura, Shalimar Bagh, etc.
       const hotspots = [
-        { lat: 37.7849, lng: -122.4094, count: 15 }, // Downtown
-        { lat: 37.7849, lng: -122.4194, count: 18 }, // Tenderloin
-        { lat: 37.7599, lng: -122.4148, count: 12 }, // Mission
-        { lat: 37.7694, lng: -122.4862, count: 10 }, // Sunset
-        { lat: 37.7294, lng: -122.4862, count: 8 },  // Parkside
-        { lat: 37.7999, lng: -122.3999, count: 14 }, // Financial District
-        { lat: 37.7749, lng: -122.4394, count: 11 }, // Hayes Valley
-        { lat: 37.7599, lng: -122.3848, count: 9 },  // Potrero
+        { lat: 28.7196, lng: 77.1186, count: 18 }, // Rohini Sector 16
+        { lat: 28.7049, lng: 77.1324, count: 16 }, // Pitampura Metro Corridor
+        { lat: 28.7340, lng: 77.1045, count: 14 }, // Rithala Depot / Metro
+        { lat: 28.7135, lng: 77.0998, count: 12 }, // Swarn Jayanti Park
+        { lat: 28.7015, lng: 77.1500, count: 10 }, // Shalimar Bagh
+        { lat: 28.6898, lng: 77.1400, count: 9 },  // Ashok Vihar border
+        { lat: 28.7235, lng: 77.0842, count: 11 }, // Sector 24 Rohini markets
+        { lat: 28.7420, lng: 77.1235, count: 8 },  // Budh Vihar / Pooth Kalan
       ];
 
       hotspots.forEach(spot => {
         for (let i = 0; i < spot.count; i++) {
           // Add random scatter around hotspot
-          const lat = spot.lat + (Math.random() - 0.5) * 0.02;
-          const lng = spot.lng + (Math.random() - 0.5) * 0.02;
+          const lat = spot.lat + (Math.random() - 0.5) * 0.015;
+          const lng = spot.lng + (Math.random() - 0.5) * 0.015;
           const intensity = 0.5 + Math.random() * 0.5; // 0.5 to 1.0
           heatData.push([lat, lng, intensity]);
         }
       });
 
-      // Add random scattered calls across the city
+      // Add random scattered calls across Northwest Delhi to keep the heatmap alive
       for (let i = 0; i < 50; i++) {
-        const lat = 37.7749 + (Math.random() - 0.5) * 0.1;
-        const lng = -122.4194 + (Math.random() - 0.5) * 0.15;
+        const lat = 28.7041 + (Math.random() - 0.5) * 0.12;
+        const lng = 77.1025 + (Math.random() - 0.5) * 0.18;
         const intensity = Math.random() * 0.5; // 0 to 0.5
         heatData.push([lat, lng, intensity]);
       }

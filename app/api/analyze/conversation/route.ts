@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('🔍 Analyzing conversation:', {
+    logger.info('Analyzing conversation via GPT workflow', {
       chatGroupId: chat_group_id,
       configId: config_id,
       phoneNumber: phone_number
@@ -27,13 +28,13 @@ export async function POST(request: NextRequest) {
 
     // Step 1: Fetch Hume chat events
     const humeResponse = await fetch(
-      `${request.nextUrl.origin}/api/hume/chat-events?chat_group_id=${chat_group_id}${config_id ? `&config_id=${config_id}` : ''}`,
+      `${request.nextUrl.origin}/api/hume/chat-events?chat_group_id=${chat_group_id}`,
       { method: 'GET' }
     );
 
     if (!humeResponse.ok) {
       const error = await humeResponse.json();
-      console.error('❌ Failed to fetch Hume chat events:', error);
+      logger.error('Failed to fetch Hume chat events', { error });
       return NextResponse.json(
         { error: 'Failed to fetch conversation data', details: error },
         { status: humeResponse.status }
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     const humeData = await humeResponse.json();
-    console.log('✅ Hume data retrieved:', {
+    logger.info('Hume data retrieved for analysis', {
       transcriptLength: humeData.transcript?.length || 0,
       emotionCount: humeData.emotions?.length || 0
     });
@@ -66,10 +67,14 @@ export async function POST(request: NextRequest) {
 
     // Step 2: Build full conversation transcript for GPT
     const conversationText = humeData.transcript
-      .map((msg: any) => `${msg.role.toUpperCase()}: ${msg.text}`)
+      .map((msg: any) => {
+        const text = typeof msg.text === 'string' ? msg.text.trim() : '';
+        return text.length > 0 ? `${msg.role.toUpperCase()}: ${text}` : '';
+      })
+      .filter((line: string) => line.length > 0)
       .join('\n');
 
-    console.log('📝 Conversation transcript:', {
+    logger.debug('Conversation transcript compiled', {
       length: conversationText.length,
       messageCount: humeData.transcript.length
     });
@@ -78,7 +83,7 @@ export async function POST(request: NextRequest) {
     const openaiKey = process.env.OPENAI_API_KEY;
     
     if (!openaiKey) {
-      console.warn('⚠️ OPENAI_API_KEY not configured, using emotion-based analysis only');
+      logger.warn('OPENAI_API_KEY not configured, using emotion-based analysis only');
       return NextResponse.json({
         success: true,
         chat_group_id,
@@ -156,7 +161,7 @@ Provide comprehensive emergency analysis in JSON format.`
     }
 
     const gptAnalysis = JSON.parse(gptContent);
-    console.log('✅ GPT analysis complete:', {
+    logger.info('GPT analysis complete', {
       severity: gptAnalysis.severity,
       labels: gptAnalysis.labels?.length || 0,
       flags: gptAnalysis.flags?.length || 0
@@ -186,7 +191,9 @@ Provide comprehensive emergency analysis in JSON format.`
       boostedScore >= 60 ? 'high' :
       boostedScore >= 40 ? 'medium' : 'low';
 
-    console.log('🎯 Final analysis:', {
+    applyKeywordEscalation(finalAnalysis, conversationText);
+
+    logger.info('Final analysis after emotion boost', {
       severity: finalAnalysis.severity,
       severityScore: finalAnalysis.severity_score,
       labels: finalAnalysis.labels,
@@ -203,7 +210,9 @@ Provide comprehensive emergency analysis in JSON format.`
     });
 
   } catch (error) {
-    console.error('❌ Error analyzing conversation:', error);
+    logger.error('Error analyzing conversation', {
+      error: error instanceof Error ? error.message : error
+    });
     return NextResponse.json(
       { 
         error: 'Failed to analyze conversation',
@@ -271,5 +280,101 @@ function createEmotionBasedAnalysis(humeData: any) {
     analyzed_at: new Date().toISOString(),
     analysis_method: 'Emotion-based (GPT unavailable)'
   };
+}
+
+/**
+ * @description Escalate severity when critical phrases appear, guarding against false lows.
+ */
+function applyKeywordEscalation(analysis: any, conversationText: string) {
+  const normalizedText = conversationText.toLowerCase();
+
+  const ensuredFlags = Array.isArray(analysis.flags) ? analysis.flags : [];
+  const ensuredLabels = Array.isArray(analysis.labels) ? analysis.labels : [];
+  const ensuredThreats = Array.isArray(analysis.immediate_threats)
+    ? analysis.immediate_threats
+    : [];
+
+  const keywordMatrix = [
+    {
+      regex: /\b(heart attack|cardiac arrest|chest pain|no pulse|not breathing)\b/,
+      severity: 95,
+      label: 'MEDICAL_EMERGENCY',
+      flag: 'CARDIAC_EMERGENCY',
+      threat: 'Cardiac arrest risk',
+      incident: {
+        type: 'medical_emergency',
+        subtype: 'cardiac event'
+      }
+    },
+    {
+      regex: /\b(bleeding out|severe bleeding|gunshot|stab wound)\b/,
+      severity: 92,
+      label: 'TRAUMA_EMERGENCY',
+      flag: 'LIFE_THREATENING_BLEED',
+      threat: 'Severe bleeding',
+      incident: {
+        type: 'medical_emergency',
+        subtype: 'major trauma'
+      }
+    },
+    {
+      regex: /\b(fire|house on fire|smoke inhalation|trapped in fire)\b/,
+      severity: 90,
+      label: 'FIRE_EMERGENCY',
+      flag: 'ACTIVE_FIRE',
+      threat: 'Structure fire',
+      incident: {
+        type: 'fire',
+        subtype: 'structure fire'
+      }
+    }
+  ];
+
+  let escalated = false;
+
+  keywordMatrix.forEach((rule) => {
+    if (rule.regex.test(normalizedText)) {
+      analysis.severity_score = Math.max(analysis.severity_score || 0, rule.severity);
+      analysis.priority_code = 'Code 3';
+      analysis.caller_condition = analysis.caller_condition || 'panicked';
+      analysis.incident_type = analysis.incident_type || rule.incident.type;
+      analysis.incident_subtype = analysis.incident_subtype || rule.incident.subtype;
+
+      if (!ensuredLabels.includes(rule.label)) {
+        ensuredLabels.push(rule.label);
+      }
+      if (!ensuredFlags.includes(rule.flag)) {
+        ensuredFlags.push(rule.flag);
+      }
+      if (!ensuredThreats.includes(rule.threat)) {
+        ensuredThreats.push(rule.threat);
+      }
+
+      escalated = true;
+    }
+  });
+
+  if (escalated) {
+    const escalatedScore = analysis.severity_score || 0;
+    analysis.severity =
+      escalatedScore >= 80 ? 'critical' : escalatedScore >= 60 ? 'high' : 'medium';
+    analysis.flags = ensuredFlags;
+    analysis.labels = ensuredLabels;
+    analysis.immediate_threats = ensuredThreats;
+    analysis.recommended_units = Array.isArray(analysis.recommended_units)
+      ? analysis.recommended_units
+      : [];
+
+    if (!analysis.recommended_units.includes('Advanced Life Support Ambulance')) {
+      analysis.recommended_units.unshift('Advanced Life Support Ambulance');
+    }
+
+    logger.info('Keyword escalation applied to GPT analysis', {
+      severity: analysis.severity,
+      score: analysis.severity_score,
+      flags: analysis.flags,
+      labels: analysis.labels
+    });
+  }
 }
 

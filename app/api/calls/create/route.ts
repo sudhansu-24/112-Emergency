@@ -25,9 +25,17 @@ export async function POST(request: NextRequest) {
     let triageData = null;
     if (transcript && transcript.length > 0) {
       try {
-        const fullTranscript = Array.isArray(transcript) 
-          ? transcript.map(t => t.text).join(' ')
-          : transcript;
+        const sanitizedTranscript = Array.isArray(transcript)
+          ? transcript
+              .map((segment) =>
+                typeof segment?.text === 'string' ? segment.text.trim() : ''
+              )
+              .filter((text) => text.length > 0)
+          : typeof transcript === 'string'
+          ? transcript.split('\n').map((line) => line.trim()).filter(Boolean)
+          : [];
+
+        const fullTranscript = sanitizedTranscript.join(' ');
 
         const triageResponse = await fetch(`${request.nextUrl.origin}/api/triage/extract`, {
           method: 'POST',
@@ -88,12 +96,7 @@ export async function POST(request: NextRequest) {
         call_status: 'in-progress',
       
       // Location: Use IP-based geolocation or browser location in production
-      caller_location: {
-        address: triageData?.extraction?.location || 'Location pending verification',
-        latitude: 37.7749 + (Math.random() - 0.5) * 0.1,
-        longitude: -122.4194 + (Math.random() - 0.5) * 0.1,
-        confidence: 0.60,
-      },
+      caller_location: buildCallerLocation(triageData?.extraction?.location),
       
       // Incident data from AI triage
       incident_type: triageData?.extraction?.incident_type || 'emergency',
@@ -116,7 +119,26 @@ export async function POST(request: NextRequest) {
       immediate_threats: triageData?.extraction?.immediate_threats || [],
       
       // Transcript
-      transcript: transcript || [],
+      transcript: Array.isArray(transcript)
+        ? transcript
+            .map((segment: any, index: number) => ({
+              text: typeof segment?.text === 'string' ? segment.text.trim() : '',
+              role: segment?.role || segment?.speaker || 'user',
+              timestamp: segment?.timestamp || new Date().toISOString(),
+              segment_index: index,
+            }))
+            .filter((segment) => segment.text.length > 0)
+        : typeof transcript === 'string'
+        ? transcript
+            .split('\n')
+            .map((line, index) => ({
+              text: line.trim(),
+              role: 'user',
+              timestamp: new Date().toISOString(),
+              segment_index: index,
+            }))
+            .filter((segment) => segment.text.length > 0)
+        : [],
       
       // Timestamps
       created_at: new Date().toISOString(),
@@ -151,6 +173,56 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+function buildCallerLocation(locationText?: string) {
+  if (typeof locationText === 'string' && locationText.trim().length > 0) {
+    const normalized = locationText.trim();
+
+    if (/india|delhi|noida|uttar pradesh/gi.test(normalized)) {
+      const latLon = lookupIndianCoordinates(normalized);
+      return {
+        address: normalized,
+        latitude: latLon.latitude,
+        longitude: latLon.longitude,
+        confidence: 0.85,
+      };
+    }
+
+    return {
+      address: normalized,
+      latitude: 37.7749,
+      longitude: -122.4194,
+      confidence: 0.4,
+    };
+  }
+
+  return {
+    address: 'Location pending verification',
+    latitude: 28.6139,
+    longitude: 77.209,
+    confidence: 0.25,
+  };
+}
+
+function lookupIndianCoordinates(query: string) {
+  const lookupTable: Record<string, { latitude: number; longitude: number }> = {
+    noida: { latitude: 28.5355, longitude: 77.391 },
+    'greater noida': { latitude: 28.4744, longitude: 77.503 },
+    'uttar pradesh': { latitude: 26.8467, longitude: 80.9462 },
+    delhi: { latitude: 28.6139, longitude: 77.209 },
+    'new delhi': { latitude: 28.6139, longitude: 77.209 },
+    'rohini sector 16': { latitude: 28.7196, longitude: 77.1186 },
+  };
+
+  const normalizedQuery = query.toLowerCase();
+  for (const key of Object.keys(lookupTable)) {
+    if (normalizedQuery.includes(key)) {
+      return lookupTable[key];
+    }
+  }
+
+  return { latitude: 28.6139, longitude: 77.209 };
 }
 
 

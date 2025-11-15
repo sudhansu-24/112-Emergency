@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { EmergencyCall } from '@/lib/types';
 import { mockCalls, getTimeElapsed, getSeverityColor } from '@/lib/mock-data';
 import { Card } from '@/components/ui/card';
@@ -71,34 +71,50 @@ export default function DashboardPage() {
   const [dataManagementOpen, setDataManagementOpen] = useState(false);
   const [callHistoryOpen, setCallHistoryOpen] = useState(false);
 
+  const loadCalls = useCallback(() => {
+    try {
+      const storedCalls = localStorage.getItem('kwik_emergency_calls');
+      const newCalls = storedCalls ? JSON.parse(storedCalls) : [];
+      const allCalls = [...newCalls, ...mockCalls];
+      setCalls(allCalls);
+
+      if (!hasAutoSelectedRef.current) {
+        const activeCall = allCalls.find(
+          (c) => c.status === 'active' || c.call_status === 'in-progress'
+        );
+        if (activeCall) {
+          setSelectedCallId(activeCall.id);
+          hasAutoSelectedRef.current = true;
+        }
+      }
+    } catch (error) {
+      console.error('Error loading calls:', error);
+      setCalls(mockCalls);
+    }
+  }, [mockCalls]);
+
   // Load calls from localStorage + mock data
   useEffect(() => {
-    const loadCalls = () => {
-      try {
-        const storedCalls = localStorage.getItem('kwik_emergency_calls');
-        const newCalls = storedCalls ? JSON.parse(storedCalls) : [];
-        const allCalls = [...newCalls, ...mockCalls];
-        setCalls(allCalls);
-        
-        // Auto-select first active call on initial load only
-        if (!hasAutoSelectedRef.current) {
-          const activeCall = allCalls.find((c) => c.status === 'active' || c.call_status === 'in-progress');
-          if (activeCall) {
-            setSelectedCallId(activeCall.id);
-            hasAutoSelectedRef.current = true;
-          }
-        }
-      } catch (error) {
-        console.error('Error loading calls:', error);
-        setCalls(mockCalls);
-      }
-    };
     loadCalls();
-
-    // Refresh calls every 5 seconds
     const interval = setInterval(loadCalls, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [loadCalls]);
+
+  useEffect(() => {
+    const handleCallUpdated = (event: Event) => {
+      const detail = (event as CustomEvent<{ call: EmergencyCall; isUpdate: boolean }>).detail;
+      loadCalls();
+      if (detail && !detail.isUpdate) {
+        setSelectedCallId(detail.call.id);
+        setView('emergencies');
+      }
+    };
+
+    window.addEventListener('kwik-call-updated', handleCallUpdated);
+    return () => {
+      window.removeEventListener('kwik-call-updated', handleCallUpdated);
+    };
+  }, [loadCalls]);
 
   const selectedCall = calls.find((c) => c.id === selectedCallId);
   const activeCalls = calls.filter((c) => c.status === 'active' || c.call_status === 'in-progress');
@@ -302,7 +318,12 @@ export default function DashboardPage() {
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-2">
                           <Radio className="w-4 h-4 text-blue-400" />
-                          <span className="text-sm font-medium">{call.incident_subtype || call.incident_type}</span>
+                        <span className="text-sm font-medium">{call.incident_subtype || call.incident_type}</span>
+                        {call.flags && call.flags.length > 0 && (
+                          <span className="rounded-full bg-red-600/20 px-2 py-0.5 text-[10px] font-semibold text-red-300">
+                            {call.flags[0]}
+                          </span>
+                        )}
                         </div>
                       </div>
                       <div className="text-xs text-gray-500">{getTimeElapsed(call.created_at)}</div>
@@ -328,6 +349,11 @@ export default function DashboardPage() {
                         <div className="flex items-center gap-2">
                           <Flame className="w-4 h-4 text-red-500" />
                           <span className="text-sm font-medium">{call.incident_subtype || call.incident_type}</span>
+                          {call.flags && call.flags.length > 0 && (
+                            <span className="rounded-full bg-red-600/20 px-2 py-0.5 text-[10px] font-semibold text-red-300">
+                              {call.flags[0]}
+                            </span>
+                          )}
                         </div>
                         <Badge className="text-xs bg-red-600">CRITICAL</Badge>
                       </div>
@@ -354,6 +380,11 @@ export default function DashboardPage() {
                       {call.severity === 'medium' && <AlertCircle className="w-4 h-4 text-yellow-500" />}
                       {call.severity === 'low' && <Activity className="w-4 h-4 text-green-500" />}
                       <span className="text-sm font-medium">{call.incident_subtype || call.incident_type}</span>
+                      {call.flags && call.flags.length > 0 && (
+                        <span className="rounded-full bg-red-600/20 px-2 py-0.5 text-[10px] font-semibold text-red-300">
+                          {call.flags[0]}
+                        </span>
+                      )}
                     </div>
                     <Badge 
                       className={`text-xs ${
@@ -435,6 +466,18 @@ export default function DashboardPage() {
                         ))}
                       </div>
                     </div>
+                    {selectedCall.flags && selectedCall.flags.length > 0 && (
+                      <div>
+                        <span className="text-gray-500">Flags:</span>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {selectedCall.flags.map((flag) => (
+                            <Badge key={flag} variant="destructive" className="text-xs">
+                              {flag.replace(/_/g, ' ')}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -693,13 +736,7 @@ export default function DashboardPage() {
             <StartEmergencyCall onCallCreated={(id) => {
               setSelectedCallId(id);
               setView('emergencies');
-              // Reload calls
-              const loadCalls = () => {
-                const storedCalls = localStorage.getItem('kwik_emergency_calls');
-                const newCalls = storedCalls ? JSON.parse(storedCalls) : [];
-                setCalls([...newCalls, ...mockCalls]);
-              };
-              setTimeout(loadCalls, 500);
+              loadCalls();
             }} />
           </div>
         </div>

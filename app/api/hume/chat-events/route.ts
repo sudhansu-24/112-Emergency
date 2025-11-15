@@ -6,12 +6,16 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
+  let chatGroupId: string | null = null;
+  let configId: string | null = null;
+
   try {
     const { searchParams } = new URL(request.url);
-    const chatGroupId = searchParams.get('chat_group_id');
-    const configId = searchParams.get('config_id');
+    chatGroupId = searchParams.get('chat_group_id');
+    configId = searchParams.get('config_id');
 
     if (!chatGroupId) {
       return NextResponse.json(
@@ -21,9 +25,9 @@ export async function GET(request: NextRequest) {
     }
 
     const humeApiKey = process.env.HUME_API_KEY;
-    
+
     if (!humeApiKey) {
-      console.warn('⚠️ HUME_API_KEY not configured, returning mock data');
+      logger.warn('HUME_API_KEY not configured, returning mock data', { chatGroupId });
       return NextResponse.json({
         chat_group_id: chatGroupId,
         events: [],
@@ -31,21 +35,16 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Fetch chat events from Hume AI
-    const url = new URL('https://api.hume.ai/v0/evi/chat_events');
-    url.searchParams.append('chat_group_id', chatGroupId);
-    if (configId) {
-      url.searchParams.append('config_id', configId);
-    }
+    const eventsUrl = new URL(
+      `https://api.hume.ai/v0/evi/chat_groups/${encodeURIComponent(chatGroupId)}/events`
+    );
 
-    console.log('📞 Fetching Hume chat events:', {
+    logger.info('Fetching Hume chat events from new endpoint', {
       chatGroupId,
-      configId,
-      url: url.toString()
+      url: eventsUrl.toString(),
     });
 
-    const response = await fetch(url.toString(), {
-      method: 'GET',
+    const response = await fetch(eventsUrl.toString(), {
       headers: {
         'X-Hume-Api-Key': humeApiKey,
         'Content-Type': 'application/json',
@@ -54,22 +53,47 @@ export async function GET(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(' Hume API error:', response.status, errorText);
-      
+
+      if (response.status === 404) {
+        logger.warn('Hume chat events endpoint returned 404', {
+          chatGroupId,
+          configId,
+          error: errorText,
+        });
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Chat events not found',
+            details: errorText,
+            chat_group_id: chatGroupId,
+          },
+          { status: 404 }
+        );
+      }
+
+      logger.error('Hume API error fetching chat events', {
+        status: response.status,
+        chatGroupId,
+        configId,
+        error: errorText,
+      });
+
       return NextResponse.json(
-        { 
+        {
           error: `Hume API error: ${response.status}`,
           details: errorText,
-          chat_group_id: chatGroupId
+          chat_group_id: chatGroupId,
         },
         { status: response.status }
       );
     }
 
     const data = await response.json();
-    console.log('Hume chat events retrieved:', {
+    const events = data.events_page ?? data.events ?? [];
+
+    logger.info('Hume chat events retrieved', {
       chatGroupId,
-      eventCount: data.events?.length || 0
+      eventCount: events.length,
     });
 
     // Transform Hume events into structured conversation data
@@ -85,30 +109,29 @@ export async function GET(request: NextRequest) {
     const allEmotions: Array<any> = [];
 
     // Parse Hume events
-    if (data.events && Array.isArray(data.events)) {
-      data.events.forEach((event: any) => {
-        // User message
+    if (Array.isArray(events)) {
+      events.forEach((event: any) => {
+        const normalizedText = getEventText(event);
+
         if (event.type === 'USER_MESSAGE' || event.role === 'user') {
           transcript.push({
             role: 'user',
-            text: event.message?.content || event.text || '',
+            text: normalizedText,
             timestamp: event.timestamp || new Date().toISOString(),
             emotions: event.models?.prosody?.scores || event.emotions,
             topEmotion: getTopEmotion(event.models?.prosody?.scores || event.emotions),
             emotionIntensity: getTopEmotionIntensity(event.models?.prosody?.scores || event.emotions),
           });
 
-          // Store emotions for analysis
           if (event.models?.prosody?.scores || event.emotions) {
             allEmotions.push(event.models?.prosody?.scores || event.emotions);
           }
         }
 
-        // Assistant message
         if (event.type === 'AGENT_MESSAGE' || event.role === 'assistant') {
           transcript.push({
             role: 'assistant',
-            text: event.message?.content || event.text || '',
+            text: normalizedText,
             timestamp: event.timestamp || new Date().toISOString(),
           });
         }
@@ -125,12 +148,16 @@ export async function GET(request: NextRequest) {
       transcript,
       emotions: allEmotions,
       emotion_stats: emotionStats,
-      event_count: data.events?.length || 0,
-      raw_data: data, // Include raw data for debugging
+      event_count: events.length,
+      raw_data: data,
     });
 
   } catch (error) {
-    console.error('❌ Error fetching Hume chat events:', error);
+    logger.error('Error fetching Hume chat events', {
+      chatGroupId,
+      configId,
+      error: error instanceof Error ? error.message : error,
+    });
     return NextResponse.json(
       { 
         error: 'Failed to fetch chat events',
@@ -139,6 +166,22 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+/**
+ * @description Normalize Hume event structures to extract spoken text safely.
+ */
+function getEventText(event: any): string {
+  const rawText =
+    event.transcript_line ||
+    event.message_text ||
+    event.text ||
+    (event.message?.content ?? '') ||
+    (Array.isArray(event.message?.segments)
+      ? event.message.segments.map((segment: any) => segment?.text ?? '').join(' ')
+      : '');
+
+  return typeof rawText === 'string' ? rawText.trim() : '';
 }
 
 /**

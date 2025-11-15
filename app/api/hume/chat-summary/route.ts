@@ -38,6 +38,22 @@ async function fetchFromHume(url: string) {
 }
 
 /**
+ * @description Extracts readable transcript text from heterogeneous Hume event payloads.
+ */
+function getEventText(event: any): string {
+  const rawText =
+    event.transcript_line ||
+    event.message_text ||
+    event.text ||
+    (event.message?.content ?? '') ||
+    (Array.isArray(event.message?.segments)
+      ? event.message.segments.map((segment: any) => segment?.text ?? '').join(' ')
+      : '');
+
+  return typeof rawText === 'string' ? rawText.trim() : '';
+}
+
+/**
  * @returns Aggregated Hume chat data (config, chat groups, latest events).
  */
 export async function GET(request: NextRequest) {
@@ -86,7 +102,22 @@ export async function GET(request: NextRequest) {
     if (latestChat?.id) {
       const eventsUrl = `https://api.hume.ai/v0/evi/chat_groups/${latestChat.id}/events`;
       const eventsData = await fetchFromHume(eventsUrl);
-      latestEvents = eventsData.events_page ?? [];
+      const rawEvents = eventsData.events_page ?? eventsData.events ?? [];
+
+      latestEvents = rawEvents.map((event: any) => {
+        const text = getEventText(event);
+
+        if (text.length === 0) {
+          return event;
+        }
+
+        return {
+          ...event,
+          text,
+          message_text: text,
+          transcript_line: text,
+        };
+      });
     }
 
     return NextResponse.json({
